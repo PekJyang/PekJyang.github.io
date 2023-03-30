@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-hant">
+
+<head>
+    <meta charset="utf-8">
+    <title>六朝中古漢語擬音</title>
+    <script src="https://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+    <meta name="viewport"
+        content="width=device-width,initial-scale=1.0,maximum-scale=1.0,minimum-scale=1.0,user-scalable=no">
+</head>
+
+<body>
+    <h1>中夏正音——六朝中古漢語擬音</h1>
+
+    <div>
+        <br />
+        <p align="center">
+            讀經之法，法中夏之音，此是九天之正音也。&emsp;&emsp;——《上清太極隱注玉經寶訣》
+        </p>
+        <br />
+
+        <p>按魏晉音系，處於上古、中古漢語交際時期，上承秦漢、下啓唐宋。而道教諸經籍，亦多出於六朝，故所言「正音」，當爲《切韻》所反映六朝音系。</p>
+        <p>本項目以王力先生的著作《漢語語音史》爲依據，擬定六朝中古漢語音韻。</p>
+        <p>
+            <I>出於安全考慮，主流瀏覽器均已不支持直接訪問本地文件，故而本程序須用戶手動上傳位於同文件夾下包含《廣韻》信息的 json 文件：</I>
+            <code>KuangxGhyuenq.json</code>
+        </p>
+    </div>
+
+    <br />
+
+    <div>
+        <label for="files">請導入文件：</label>
+        <input type="file" id="files" name="files" accept=".json" />
+    </div>
+
+    <br />
+
+    <div>
+        <label for="INPUT_CHECK">請輸入要查詢的内容：</label>
+        <input type="text" name="INPUT_CHECK" value="" accept-charset="utf-8">
+        <button type="button" onclick="showInput()">開始查詢</button>
+        <p>
+            <span>您要查詢的内容是：</span>
+            <span id="input_content"></span>
+        </p>
+    </div>
+
+    <div>
+        <label>在json文件中搜索滿足條件的數據：</label>
+        <button type="button" onclick="searchFunction()">搜索</button>
+        <p id="search"><br /></p>
+    </div>
+
+    <br />
+
+    <div>
+        <label>查詢結果是：</label>
+        <button type="button" onclick="generate_info()">查看結果</button>
+        <div>
+            <br />
+            <table>
+                <tbody>
+                    <tr>
+                        <td style="width: 80px;">查詢内容：</td>
+                        <td><span id="searchinfo"></span></td>
+                    </tr>
+                    <tr>
+                        <td style="width: 80px;">音韻信息：</td>
+                        <td><span id="yonhinfo"></span></td>
+                    </tr>
+                    <tr>
+                        <td style="width: 80px;">音標信息：</td>
+                        <td><span id="IPAinfo"></span></td>
+                    </tr>
+                    <tr>
+                        <td style="width: 80px;">拼音信息：</td>
+                        <td><span id="Alphabetinfo"></span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <br />
+
+</body>
+
+<script>
+    //創建全局變量 json
+    var inputElement = document.getElementById("files");
+    inputElement.addEventListener("change", handleFiles, false);
+
+    function handleFiles() {
+        var selectedFile = document.getElementById("files").files[0];//获取读取的File对象
+        var name = selectedFile.name;//读取选中文件的文件名
+        var size = selectedFile.size;//读取选中文件的大小
+        var reader = new FileReader();//这里是核心！！！读取操作就是由它完成的。
+        reader.readAsText(selectedFile);//读取文件的内容
+        reader.onload = function () {
+            json = JSON.parse(this.result);
+        };
+        console.log("創建全局變量“json”。")
+    }
+
+    //創建可變全局變量 input_char
+    function getInput() {
+        var input_char = document.getElementsByName("INPUT_CHECK")[0].value;
+        return [...input_char]
+    }
+    function showInput() {
+        input_char = getInput()
+        document.getElementById("input_content").innerHTML = input_char;
+        console.log("創建全局變量“input_char”。")
+    }
+
+    //以表格形式顯示json内容
+    function showJson(SHOWN_JSON, PATH) {
+        var text = "<table><thead><tr>" +
+            "<th><b>字</b></th>" +
+            "<td>&ensp;</td>" +
+            "<th><b>反切</b></th>" +
+            "<td>&ensp;</td>" +
+            "<th><b>聲韻</b></th>" +
+            "<td>&ensp;</td>" +
+            "<th><b>IPA</b></th>" +
+            "<td>&ensp;</td>" +
+            "<th><b>釋義</b></th>" +
+            "</tr></thead><tbody>";
+        for (var i = 0; i < SHOWN_JSON.length; i++) {
+            text = text + "<tr><td>" +
+                SHOWN_JSON[i].CHAR + "</td><td>&ensp;</td><td style=\"width: 32px;\">" +
+                SHOWN_JSON[i].PYANXCHET + "</td><td>&ensp;</td><td style=\"width: 80px;\">" +
+                SHOWN_JSON[i].SJENGYONH + "</td><td>&ensp;</td><td align=\"center\">" +
+                SHOWN_JSON[i].SJENGYONH_IPA + "</td><td>&ensp;</td><td>" +
+                SHOWN_JSON[i].MEANING + "</td></tr>";
+        };
+        text = text + "</tbody></table>"
+        document.getElementById(PATH).innerHTML = text;
+    }
+
+    // 創建可變全局變量 query_data
+    function searchFunction() {
+        var KuangxYonh = json.KuangxYonh;
+        var filter_by = { CHAR: input_char };
+        var query = KuangxYonh.filter(o => Object.keys(filter_by).every(k => filter_by[k].some(f => o[k] === f)));
+
+        query_data = []
+        var shown_data = []
+        for (let i = 0; i < filter_by.CHAR.length; i++) {
+            var content = JSON.parse(JSON.stringify(query))
+            var filter = content.filter(function (fp) { return fp.CHAR === filter_by.CHAR[i]; })
+            if (filter.length == 0) {
+                filter.push({ CHAR: filter_by.CHAR[i], PYANXCHET: filter_by.CHAR[i], SJENGYONH: filter_by.CHAR[i], SJENGYONH_IPA: filter_by.CHAR[i], SJENGYONH_ALPHABET: filter_by.CHAR[i], MEANING: "-" })
+            }
+            for (var info of filter) {
+                info.ORDER= i
+                query_data.push(info)
+            }
+            // 顯示匹配的條目
+            var shown_filter = JSON.parse(JSON.stringify(filter))
+            if (shown_filter.length > 1) {
+                for (let j = 0; j < shown_filter.length; j++) {
+                    var info = shown_filter[j]
+                    var id_signal = info.CHAR
+                    info.CHAR = "<div id=\"" + i.toString().padStart(filter_by.CHAR.length.toString().length, '0') + id_signal + j.toString().padStart(shown_filter.length.toString().length, '0') + "divCHAR\">" + info.CHAR + "</div>"
+                    info.PYANXCHET = "<div id=\"" + i.toString().padStart(filter_by.CHAR.length.toString().length, '0') + id_signal + j.toString().padStart(shown_filter.length.toString().length, '0') + "divPYANXCHET\">" + info.PYANXCHET + "</div>"
+                    info.SJENGYONH = "<div id=\"" + i.toString().padStart(filter_by.CHAR.length.toString().length, '0') + id_signal + j.toString().padStart(shown_filter.length.toString().length, '0') + "divSJENGYONH\">" + info.SJENGYONH + "</div>"
+                    info.SJENGYONH_IPA = "<div id=\"" + i.toString().padStart(filter_by.CHAR.length.toString().length, '0') + id_signal + j.toString().padStart(shown_filter.length.toString().length, '0') + "divSJENGYONH_IPA\">" + info.SJENGYONH_IPA + "</div>"
+                    info.MEANING = "<div id=\"" + i.toString().padStart(filter_by.CHAR.length.toString().length, '0') + id_signal + j.toString().padStart(shown_filter.length.toString().length, '0') + "divMEANING\"><button type=\"button\" id=\"" + i.toString().padStart(filter_by.CHAR.length.toString().length, '0') + id_signal + j.toString().padStart(shown_filter.length.toString().length, '0') + "\" onclick=\"selectFunction('" + i.toString().padStart(filter_by.CHAR.length.toString().length, '0') + id_signal + j.toString().padStart(shown_filter.length.toString().length, '0') + "divMEANING')\">" + info.MEANING + "</button></div>"
+                    filter[j].LENGTH = shown_filter.length
+                }
+            }
+            for (var info of shown_filter) {
+                shown_data.push(info)
+            }
+        }
+        console.log("創建全局變量“query_data”。")
+        showJson(shown_data, "search");
+    }
+
+    // 變更可變全局變量 query_data
+    function selectFunction(ID) {
+        var select_meaning = document.getElementById(ID).textContent
+        var select = query_data.filter(function (fp) { return fp.MEANING === select_meaning && fp.ORDER === parseFloat(ID.substr(0,input_char.length.toString().length)); })[0]
+        var select_char = select.CHAR
+        var select_order = select.ORDER; console.log(select_order)
+        // var drop = query_data.filter(function (fp) { return fp.CHAR === select_char; })
+        var drop = query_data.filter(function (fp) { return fp.ORDER === select_order && fp.CHAR === select_char && fp.MEANING !== select_meaning; })
+        query_data = query_data.filter(el => !drop.includes(el))
+        document.getElementById(ID).innerHTML = select_meaning;
+        for (let i = 0; i < select.LENGTH; i++) {
+            if (i != ID[input_char.length.toString().length+1]) {
+                document.getElementById(ID.substr(0,input_char.length.toString().length+1) + i + "divCHAR").innerHTML = "";
+                document.getElementById(ID.substr(0,input_char.length.toString().length+1) + i + "divPYANXCHET").innerHTML = "";
+                document.getElementById(ID.substr(0,input_char.length.toString().length+1) + i + "divSJENGYONH").innerHTML = "";
+                document.getElementById(ID.substr(0,input_char.length.toString().length+1) + i + "divSJENGYONH_IPA").innerHTML = "";
+                document.getElementById(ID.substr(0,input_char.length.toString().length+1) + i + "divMEANING").innerHTML = "";
+            }
+        }
+        console.log("變更全局變量“query_data”。")
+    }
+
+    // 創建可變全局變量 SjengYonh、IPA
+    function generate_info() {
+        SjengYonh = []; IPA = []; Alphabet = []
+        for (let i = 0; i < input_char.length; i++) {
+            var char_info = query_data.filter(function (fp) { return fp.ORDER === i; })[0]
+            SjengYonh.push(char_info.SJENGYONH)
+            IPA.push(char_info.SJENGYONH_IPA)
+            Alphabet.push(char_info.SJENGYONH_ALPHABET)
+        }
+        document.getElementById("searchinfo").innerHTML = input_char.join("");
+        document.getElementById("yonhinfo").innerHTML = SjengYonh.join(" ");
+        document.getElementById("IPAinfo").innerHTML = IPA.join(" ");
+        document.getElementById("Alphabetinfo").innerHTML = Alphabet.join(" ");
+        console.log("創建全局變量“SjengYonh、IPA”。")
+    }
+
+</script>
+
+
+</html>
